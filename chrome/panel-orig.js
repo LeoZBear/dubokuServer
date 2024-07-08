@@ -57,9 +57,6 @@ function load() {
             })(time);
 
             c.appendChild(node);
-            //c.insertAdjacentHTML("beforeend", "<li id='" + seg.name +"' class='" + (seg.uploaded ? 'uploaded' : 'notuploaded') + "' title='" + time + "'></li>");
-            //var elem = document.getElementById(seg.Name);
-            //elem.addEventListener("click", function() { showTime(time) });
         }
     });
 }
@@ -78,17 +75,6 @@ function showTime(time) {
 
 loadButton.addEventListener("click", load);
 mergeButton.addEventListener("click", merge);
-
-/*
-chrome.devtools.network.onNavigated.addListener(
-   url => {
-    log(url);
-    if (url.indexOf("iyf.tv/") > -1) {
-        site.value = "iyf";
-    }
-}); */
-
-//t.value = Math.floor(Math.random() * 10000);
 
 chrome.devtools.network.onRequestFinished.addListener(
     function(a){
