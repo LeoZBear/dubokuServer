@@ -1,0 +1,69 @@
+<html>
+    <style type="text/css">
+.uploaded {
+    width: 10pt;
+    height: 10pt;
+    margin: 1pt;
+    padding: 10pt;
+    background-color: green;
+}
+
+.notuploaded {
+    width: 10pt;
+    height: 10pt;
+    margin: 1pt;
+    padding: 10pt;
+    background-color: red;
+}
+
+ul li {
+  display: inline;
+  float: left;
+}
+
+    </style>
+<ul id = "canvas">
+    <li id="my1" class="uploaded" title="00:32"></li>
+    <li id="my2" class="notuploaded" title="00:22"></li>
+</ul>
+<script type="text/javascript">
+
+function convertTime(sec) {
+    if (sec >= 3600) {
+        var hours = Math.floor(sec / 3600);
+        return hours + ":" + convertTime(sec % 3600);
+    } else if (sec >= 60) {
+        var minutes = Math.floor(sec / 60);
+        return (minutes > 9 ? ('' + minutes) : ('0' + minutes)) + ":" + convertTime(sec % 60);
+    } else {
+        return (sec > 9 ? ('' + sec) : ('0' + sec));
+    }
+}
+
+    function load() {
+        r = new Request("http://localhost:5000/duboku/load/qchyj-8",
+            {method:"GET"});
+
+        var c = document.getElementById("canvas");
+    
+        fetch(r).then(response => response.json()).then(data => {
+            console.log(data);
+            if (!data.success) {
+                console.log("Failed. Skipping");
+                return;
+            }
+
+            for(var i = 0; i < data.segments.length; ++i) {
+                var seg = data.segments[i];
+                c.insertAdjacentHTML("beforeend", "<li id='" + seg.name +"' class='" + (seg.uploaded ? 'uploaded' : 'notuploaded') + "' title='" + convertTime(seg.startSec) + '' + seg.name + "'></li>");
+            }
+
+            document.getElementById("my2").className = "uploaded";
+        });
+    
+    }
+
+    load();
+    
+</script>
+</html>
