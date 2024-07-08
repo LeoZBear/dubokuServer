@@ -7,9 +7,6 @@ var c = document.getElementById("canvas");
 var loadButton = document.getElementById("loadButton");
 var mergeButton = document.getElementById("mergeButton");
 
-const dubokuTsRegEx = /\/([\w\d]+\.ts)/g;
-const dubokuM3u8RegEx = /\/hls\/index\.m3u8/g;
-
 var lc = 0;
 
 function log(msg) {
@@ -82,13 +79,24 @@ function showTime(time) {
 loadButton.addEventListener("click", load);
 mergeButton.addEventListener("click", merge);
 
+/*
+chrome.devtools.network.onNavigated.addListener(
+   url => {
+    log(url);
+    if (url.indexOf("iyf.tv/") > -1) {
+        site.value = "iyf";
+    }
+}); */
+
+//t.value = Math.floor(Math.random() * 10000);
+
 chrome.devtools.network.onRequestFinished.addListener(
     function(a){
         a.getContent(
             function(b){
                 if (site.value == 'duboku') {
                     if (a.request && a.request.url) {
-                        var results = (/\/([\w\d]+\.ts)/g).exec(a.request.url);
+                        var results = (/\/([\w\d_]+\.ts)/g).exec(a.request.url);
                         if (results) {
                             var tsName = results[1];
                             //log("got2 " + tsName);
@@ -98,7 +106,7 @@ chrome.devtools.network.onRequestFinished.addListener(
                             fetch(r);
 
                             document.getElementById(tsName).className = "uploaded";
-                        } else if (dubokuM3u8RegEx.test(a.request.url)) {
+                        } else if ((/\.m3u8/g).test(a.request.url)) {
                             //log("got m3u8" + a.request.url);
                             r = new Request(s.value + "duboku/index/" + t.value,
                                 {method:"POST",body:b});

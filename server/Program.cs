@@ -42,15 +42,15 @@ app.MapPut("duboku/merge/{filename}", async (string filename, HttpContext contex
         return;
     }
 
-    var filePath = Path.Combine(targetPath, "index.m3u");
+    var filePath = Path.Combine(targetPath, "index.m3u8");
     var target = Path.Combine(targetPath, $"{filename}.mp4");
     if (File.Exists(target)) {
-        File.Delete(filePath);
+        File.Delete(target);
     }
 
     using (var outputStream = File.Create(target))
     {
-        var regex = new Regex(@"([\w\d]*\.ts)$");
+        var regex = new Regex(@"([\w\d_]*\.ts)$");
         foreach(var line in await File.ReadAllLinesAsync(filePath)) {
             var match = regex.Match(line);
             if (match.Success) {
@@ -82,16 +82,20 @@ app.MapPost("duboku/index/{filename}", async (string filename, HttpContext conte
     using (var sr = new StreamReader(context.Request.Body))
     {
         var temp = await sr.ReadToEndAsync();
-        var t = Convert.FromBase64String(temp);
-        if (t.Length < 4 * 1024) {
-            Console.WriteLine($"Skipped index {filename}: {t.Length}");
-            return Task.CompletedTask;
+        byte[] t = new byte[1024 * 1024]; // 1MB
+        if (Convert.TryFromBase64String(temp, t, out int bytesWritten)) {
+            if (t.Length < 4 * 1024) {
+                Console.WriteLine($"Skipped index {filename}: {t.Length}");
+                return Task.CompletedTask;
+            }
+
+            await File.WriteAllBytesAsync(filePath, t);
+        } else {
+            await File.WriteAllTextAsync(filePath, temp);
         }
-        
-        await File.WriteAllBytesAsync(filePath, t);
     }
 
-    var regex = new Regex(@"\/([\w\d]*\.ts)$");
+    var regex = new Regex(@"\/?([\w\d_]*\.ts)\??");
     var list = new List<string>();
     foreach(var line in await File.ReadAllLinesAsync(filePath)) {
         var match = regex.Match(line);
