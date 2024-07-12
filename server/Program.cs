@@ -43,7 +43,7 @@ app.MapPut("duboku/merge/{filename}", async (string filename, HttpContext contex
     }
 
     var filePath = Path.Combine(targetPath, "index.m3u8");
-    var target = Path.Combine(targetPath, $"{filename}.mp4");
+    var target = Path.Combine(home, $"duboku/{filename}.mp4");
     if (File.Exists(target)) {
         File.Delete(target);
     }

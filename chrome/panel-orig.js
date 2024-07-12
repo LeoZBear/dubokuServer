@@ -86,10 +86,10 @@ chrome.devtools.network.onRequestFinished.addListener(
                         if (results) {
                             var tsName = results[1];
                             //log("got2 " + tsName);
-                            r = new Request(s.value + "duboku/seg/" + t.value + "/" + tsName,
+                            var r = new Request(s.value + "duboku/seg/" + t.value + "/" + tsName,
                                 {method:"POST",body:b});
     
-                            fetch(r);
+                            fetch(r).then(res => { delete a; delete b; delete r; });
 
                             document.getElementById(tsName).className = "uploaded";
                         } else if ((/\.m3u8/g).test(a.request.url)) {
