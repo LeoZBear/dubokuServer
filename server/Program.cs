@@ -50,7 +50,7 @@ app.MapPut("duboku/merge/{filename}", async (string filename, HttpContext contex
 
     using (var outputStream = File.Create(target))
     {
-        var regex = new Regex(@"([\w\d_]*\.ts)$");
+        var regex = new Regex(@"([^\.]*\.ts)$");
         foreach(var line in await File.ReadAllLinesAsync(filePath)) {
             var match = regex.Match(line);
             if (match.Success) {
@@ -95,7 +95,7 @@ app.MapPost("duboku/index/{filename}", async (string filename, HttpContext conte
         }
     }
 
-    var regex = new Regex(@"\/?([\w\d_]*\.ts)\??");
+    var regex = new Regex(@"\/?([\w\d_-]*\.ts)\??");
     var list = new List<string>();
     foreach(var line in await File.ReadAllLinesAsync(filePath)) {
         var match = regex.Match(line);
