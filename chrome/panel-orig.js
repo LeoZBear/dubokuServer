@@ -86,7 +86,7 @@ chrome.devtools.network.onRequestFinished.addListener(
                         var results = (/\/([\w\d_-]+\.ts)/g).exec(a.request.url);
                         if (results) {
                             var tsName = results[1];
-                            log("got2 " + tsName);
+                            // log("got2 " + tsName);
                             var r = new Request(s.value + "duboku/seg/" + t.value + "/" + tsName,
                                 {method:"POST",body:b});
     
