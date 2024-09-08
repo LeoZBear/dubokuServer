@@ -39,7 +39,7 @@ app.MapPut("duboku/merge/{filename}", async (string filename, HttpContext contex
     var home = Directory.GetCurrentDirectory();
     var targetPath = Path.Combine(home, $"duboku/{filename}");
     if (!Directory.Exists(targetPath)) {
-        return;
+        return 0;
     }
 
     var filePath = Path.Combine(targetPath, "index.m3u8");
@@ -48,6 +48,7 @@ app.MapPut("duboku/merge/{filename}", async (string filename, HttpContext contex
         File.Delete(target);
     }
 
+    var missing = 0;
     using (var outputStream = File.Create(target))
     {
         var regex = new Regex(@"([^\.]*\.ts)$");
@@ -56,14 +57,20 @@ app.MapPut("duboku/merge/{filename}", async (string filename, HttpContext contex
             if (match.Success) {
                 var name = match.Groups[1].Value;
                 var inputFile = Path.Combine(targetPath, name);
-                using (var inputStream = File.OpenRead(inputFile))
-                {
-                    // Buffer size can be passed as the second argument.
-                    inputStream.CopyTo(outputStream);
+                if (!File.Exists(inputFile)) {
+                    missing++;
+                } else {
+                    using (var inputStream = File.OpenRead(inputFile))
+                    {
+                        // Buffer size can be passed as the second argument.
+                        inputStream.CopyTo(outputStream);
+                    }
                 }
             } 
         }
     }
+
+    return missing;
 });
 
 app.MapPost("duboku/index/{filename}", async (string filename, HttpContext context) =>
