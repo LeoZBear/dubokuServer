@@ -1,6 +1,7 @@
 var e=document.getElementById("content");
 var t=document.getElementById("title");
 var s=document.getElementById("Server");
+var statusBoard=document.getElementById("status");
 var site = document.getElementById("site");
 var c = document.getElementById("canvas");
 
@@ -17,6 +18,10 @@ function log(msg) {
 
     e.insertAdjacentText("afterbegin", msg);
     lc++;
+}
+
+function showStatus(msg) {
+    statusBoard.innerText = msg;
 }
 
 function convertTime(sec) {
@@ -82,7 +87,7 @@ chrome.devtools.network.onRequestFinished.addListener(
             function(b){
                 if (site.value == 'duboku') {
                     if (a.request && a.request.url) {
-                        //og("got " + a.request.url);
+                        // log("got " + a.request.url);
                         var results = (/\/([\w\d_-]+\.ts)/g).exec(a.request.url);
                         if (results) {
                             var tsName = results[1];
@@ -92,9 +97,16 @@ chrome.devtools.network.onRequestFinished.addListener(
     
                             fetch(r).then(res => { delete a; delete b; delete r; });
 
-                            document.getElementById(tsName).className = "uploaded";
+                            var c = document.getElementById(tsName);
+                            c.className = "uploaded";
+                            var next = c.nextSibling;
+                            if (next) {
+                                showStatus(next.title);
+                            } else {
+                                showStatus("Sibling not found");
+                            }
                         } else if ((/\.m3u8/g).test(a.request.url)) {
-                            //log("got m3u8" + a.request.url);
+                            log("got m3u8: " + a.request.url);
                             r = new Request(s.value + "duboku/index/" + t.value,
                                 {method:"POST",body:b});
     
