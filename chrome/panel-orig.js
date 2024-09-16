@@ -4,19 +4,22 @@ var s=document.getElementById("Server");
 var statusBoard=document.getElementById("status");
 var site = document.getElementById("site");
 var c = document.getElementById("canvas");
+var startFreq = document.getElementById("StartFreq");
 
 var loadButton = document.getElementById("loadButton");
 var mergeButton = document.getElementById("mergeButton");
+var startRightButton = document.getElementById("startRightButton");
+
 
 var lc = 0;
 
 function log(msg) {
-    if (lc > 0) {
+    if (lc > 2) {
         e.innerHTML = "";
         lc = 0;
     }
 
-    e.insertAdjacentText("afterbegin", msg);
+    e.insertAdjacentText("afterbegin", msg + "\n");
     lc++;
 }
 
@@ -24,16 +27,20 @@ function showStatus(msg) {
     statusBoard.innerText = msg;
 }
 
+function subConvertTime(num) {
+    return num > 9
+        ? num
+        : "0" + num;
+}
+
 function convertTime(sec) {
-    if (sec >= 3600) {
-        var hours = Math.floor(sec / 3600);
-        return hours + ":" + convertTime(sec % 3600);
-    } else if (sec >= 60) {
-        var minutes = Math.floor(sec / 60);
-        return (minutes > 9 ? ('' + minutes) : ('0' + minutes)) + ":" + convertTime(sec % 60);
-    } else {
-        return (sec > 9 ? ('' + sec) : ('0' + sec));
-    }
+    var hours = Math.floor(sec / 3600);
+    var minutes = Math.floor((sec % 3600) / 60);
+    var seconds = Math.floor(sec % 60);
+
+    return subConvertTime(hours) + ":"
+            + subConvertTime(minutes) + ":"
+            + subConvertTime(seconds);
 }
 
 function load() {
@@ -74,12 +81,112 @@ function merge() {
     fetch(r).then(response => c.innerHTML = "merged");
 }
 
+var nextLoadingTime = "00:00:00"
 function showTime(time) {
     log(time);
 }
 
 loadButton.addEventListener("click", load);
 mergeButton.addEventListener("click", merge);
+
+function parseTime(time) {
+    var parts = time.split(":");
+
+    var hours = 0;
+    var minutes = 0;
+    var seconds = 0;
+    if (parts.length == 3) {
+        hours = parseInt(parts[0]);
+        minutes = parseInt(parts[1]);
+        seconds = parseInt(parts[2]);
+    } else {
+        minutes = parseInt(parts[0]);
+        seconds = parseInt(parts[1]);
+    }
+
+    return hours * 3600 + minutes * 60 + seconds;
+}
+
+function getTimeDifference(currentDisplayTime) {
+    var nextTime = parseTime(nextLoadingTime);
+    var curTime = parseTime(currentDisplayTime);
+    return nextTime - curTime;
+}
+
+function getCurrentDisplayTime(callback) {
+    chrome.devtools.inspectedWindow.eval(
+        'document.querySelector("vg-time-display span").innerText',
+        callback
+    );
+}
+
+function clickRight(callback, times) {
+    log("/clickRight " + times + "/ ");
+    chrome.devtools.inspectedWindow.eval(
+        'var e = document.getElementsByClassName("overlay-play-container")[0]; for(var i = 0; i < ' + times + '; ++i) { e.dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowRight", code: "ArrowRight", keyCode:39, which:39, bubbles:true}));}',
+        callback
+    );
+}
+
+function callMultipleTimes(fn, times, callback) {
+    if (times > 0) {
+      fn(() => {
+        //log("Time: " + times);
+        callMultipleTimes(fn, times - 1, callback);
+      });
+    } else {
+      callback();
+    }
+  }
+
+function moveCloser() {
+    getCurrentDisplayTime(function(currentDisplayTime, isException) {
+        if (isException) {
+            log("Fetching Display time: "+ isException);
+        } else {
+            var seconds = getTimeDifference(currentDisplayTime);
+            //log("Time difference: "+ seconds);
+            if (seconds > 0) {
+                var times = Math.floor(seconds / 5);
+
+                clickRight(function(result, isException) {
+                    if (isException) {
+                        log("Error: "+ isException);
+                    } else {
+                        //log("clicked success");
+                    }
+                }, times)
+
+                /*callMultipleTimes(clickRight, times, function(result, isException) {
+                    if (isException) {
+                        log("Error: "+ isException);
+                    } else {
+                        //log("clicked success");
+                    }
+                });*/
+            }
+
+        }
+    })
+
+}
+
+var scheduledNext = null;
+startRightButton.addEventListener("click", function() {
+    if (scheduledNext) {
+        clearTimeout(scheduledNext);
+        scheduledNext = null;
+        startRightButton.innerText = ' StartRight ';
+    } else {
+        startRightButton.innerText = ' StopRight ';
+        moveCloser();
+        scheduledNext = setInterval(moveCloser, parseInt(startFreq.value));
+    }
+  }
+);
+
+
+
 
 chrome.devtools.network.onRequestFinished.addListener(
     function(a){
@@ -102,6 +209,7 @@ chrome.devtools.network.onRequestFinished.addListener(
                             var next = c.nextSibling;
                             if (next) {
                                 showStatus(next.title);
+                                nextLoadingTime = next.title;
                             } else {
                                 showStatus("Sibling not found");
                             }
