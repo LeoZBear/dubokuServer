@@ -14,7 +14,7 @@ var startRightButton = document.getElementById("startRightButton");
 var lc = 0;
 
 function log(msg) {
-    if (lc > 2) {
+    if (lc > 0) {
         e.innerHTML = "";
         lc = 0;
     }
@@ -121,7 +121,8 @@ function getCurrentDisplayTime(callback) {
 }
 
 function clickRight(callback, times) {
-    log("/clickRight " + times + "/ ");
+    //log("/clickRight " + times + "/ ");
+    times = 1;
     chrome.devtools.inspectedWindow.eval(
         'var e = document.getElementsByClassName("overlay-play-container")[0]; for(var i = 0; i < ' + times + '; ++i) { e.dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowRight", code: "ArrowRight", keyCode:39, which:39, bubbles:true}));}',
         callback
@@ -144,6 +145,7 @@ function moveCloser() {
         if (isException) {
             log("Fetching Display time: "+ isException);
         } else {
+            log("DisplayTime :" + currentDisplayTime)
             var seconds = getTimeDifference(currentDisplayTime);
             //log("Time difference: "+ seconds);
             if (seconds > 0) {
