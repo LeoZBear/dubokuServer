@@ -10,6 +10,24 @@ var loadButton = document.getElementById("loadButton");
 var mergeButton = document.getElementById("mergeButton");
 var startRightButton = document.getElementById("startRightButton");
 
+function fillT() {
+    chrome.devtools.inspectedWindow.eval(
+        'return window.navigation.href',
+        function(result, isException) {
+            if (isException) {
+                log("Error: " + isException);
+            } else if (result != null) {
+                log("Got result: " + result)
+                t.value = result
+            } else {
+                log("Got null result")
+            }
+        }
+    );
+}
+
+fillT();
+
 
 var lc = 0;
 
@@ -158,14 +176,6 @@ function moveCloser() {
                         //log("clicked success");
                     }
                 }, times)
-
-                /*callMultipleTimes(clickRight, times, function(result, isException) {
-                    if (isException) {
-                        log("Error: "+ isException);
-                    } else {
-                        //log("clicked success");
-                    }
-                });*/
             }
 
         }
@@ -192,19 +202,22 @@ startRightButton.addEventListener("click", function() {
 
 chrome.devtools.network.onRequestFinished.addListener(
     function(a){
-        a.getContent(
-            function(b){
-                if (site.value == 'duboku') {
-                    if (a.request && a.request.url) {
-                        // log("got " + a.request.url);
-                        var results = (/\/([\w\d_-]+\.ts)/g).exec(a.request.url);
-                        if (results) {
-                            var tsName = results[1];
-                            // log("got2 " + tsName);
-                            var r = new Request(s.value + "duboku/seg/" + t.value + "/" + tsName,
-                                {method:"POST",body:b});
-    
-                            fetch(r).then(res => { delete a; delete b; delete r; });
+
+        if (a.request && a.request.url) {
+            // log("got " + a.request.url);
+            var results = (/\/([\w\d_-]+\.ts)/g).exec(a.request.url);
+            if (results) {
+                var tsName = results[1];
+                // log("got2 " + tsName);
+                a.getContent(
+                    function(b){
+                        var r = new Request(s.value + "duboku/seg/" + t.value + "/" + tsName,
+                            {method:"POST",body:b});
+        
+                        fetch(r).then(response => {
+                            if (response.status != 200) {
+                                return;
+                            }
 
                             var c = document.getElementById(tsName);
                             c.className = "uploaded";
@@ -215,20 +228,29 @@ chrome.devtools.network.onRequestFinished.addListener(
                             } else {
                                 showStatus("Sibling not found");
                             }
-                        } else if ((/\.m3u8/g).test(a.request.url)) {
-                            log("got m3u8: " + a.request.url);
-                            r = new Request(s.value + "duboku/index/" + t.value,
-                                {method:"POST",body:b});
-    
-                            fetch(r).then (res => load());
-                        } else {
-                            //log("Not matched: " + a.request.url);
-                        }
-                    } else {
-                        //log("missing request or url");
+                        });
+
+                        b = "";
                     }
-                }
+                )
+            } else if ((/\.m3u8/g).test(a.request.url)) {
+                log("got m3u8: " + a.request.url);
+
+                a.getContent(
+                    function(b){
+                        r = new Request(s.value + "duboku/index/" + t.value,
+                            {method:"POST",body:b});
+
+                        fetch(r).then (res => load());
+                    }
+                );
+            } else {
+                //log("Not matched: " + a.request.url);
             }
-        )
+        } else {
+            //log("missing request or url");
+        }
+
+        
     }
 );
