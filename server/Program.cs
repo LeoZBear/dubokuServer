@@ -34,12 +34,11 @@ app.MapGet("duboku/load/{filename}", async (string filename, HttpContext context
 })
 .Produces<DubokuLoadResults>();
 
-app.MapPut("duboku/merge/{filename}", async (string filename, [FromQuery(Name = "t")]string title, HttpContext context) =>
+app.MapPut("duboku/merge/{filename}/{title}", async (string filename, string title, HttpContext context) =>
 {
     Console.WriteLine($"合并 Merge: {filename} as {title}");
 
     if (!string.IsNullOrWhiteSpace(title)) {
-        title = title.Replace("_", "%");
         title = HttpUtility.UrlDecode(title);
     } else {
         title = filename;

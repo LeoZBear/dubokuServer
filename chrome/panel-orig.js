@@ -83,9 +83,7 @@ function merge() {
         }
 
         title = encodeURI(title)
-        title = title.replaceAll("%", '_')
-
-        r = new Request(s.value + site.value + "/merge/" + t.value + "?t=" + title,
+        r = new Request(s.value + site.value + "/merge/" + t.value + "/" + title,
             {method:"PUT"});
         fetch(r).then(response => c.innerHTML = "merged");
     })
