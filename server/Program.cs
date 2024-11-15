@@ -1,6 +1,7 @@
-using System.Text;
 using System.Text.RegularExpressions;
+using System.Web;
 using Duboku;
+using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,17 +34,27 @@ app.MapGet("duboku/load/{filename}", async (string filename, HttpContext context
 })
 .Produces<DubokuLoadResults>();
 
-app.MapPut("duboku/merge/{filename}", async (string filename, HttpContext context) =>
+app.MapPut("duboku/merge/{filename}", async (string filename, [FromQuery(Name = "t")]string title, HttpContext context) =>
 {
-    Console.WriteLine($"Merge Duboku: {filename}");
+    Console.WriteLine($"合并 Merge: {filename} as {title}");
+
+    if (!string.IsNullOrWhiteSpace(title)) {
+        title = title.Replace("_", "%");
+        title = HttpUtility.UrlDecode(title);
+    } else {
+        title = filename;
+    }
+
+    Console.WriteLine($"Merge Duboku: {filename} as {title}");
     var home = Directory.GetCurrentDirectory();
     var targetPath = Path.Combine(home, $"duboku/{filename}");
+
     if (!Directory.Exists(targetPath)) {
         return 0;
     }
 
     var filePath = Path.Combine(targetPath, "index.m3u8");
-    var target = Path.Combine(home, $"duboku/{filename}.mp4");
+    var target = Path.Combine(home, $"duboku/{title}.mp4");
     if (File.Exists(target)) {
         File.Delete(target);
     }

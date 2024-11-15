@@ -6,7 +6,11 @@
     "scripts": ["background.js"]
   },
   "devtools_page": "devtools.html",
-  "permissions": ["<all_urls>", "webNavigation", "activeTab"],
+  "permissions": ["<all_urls>", "webNavigation", "activeTab", "tabs"],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
   "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
   "manifest_version": 2,
   "content_scripts": [

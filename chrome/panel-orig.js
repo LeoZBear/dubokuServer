@@ -10,25 +10,6 @@ var loadButton = document.getElementById("loadButton");
 var mergeButton = document.getElementById("mergeButton");
 var startRightButton = document.getElementById("startRightButton");
 
-function fillT() {
-    chrome.devtools.inspectedWindow.eval(
-        'return window.navigation.href',
-        function(result, isException) {
-            if (isException) {
-                log("Error: " + isException);
-            } else if (result != null) {
-                log("Got result: " + result)
-                t.value = result
-            } else {
-                log("Got null result")
-            }
-        }
-    );
-}
-
-fillT();
-
-
 var lc = 0;
 
 function log(msg) {
@@ -93,10 +74,21 @@ function load() {
 
 function merge() {
     log("Got merge request ");
-    r = new Request(s.value + site.value + "/merge/" + t.value,
-        {method:"PUT"});
+    tabId = chrome.devtools.inspectedWindow.tabId
+    chrome.tabs.get(tabId, tab => {
+        title = tab.title.split("-")[0]
 
-    fetch(r).then(response => c.innerHTML = "merged");
+        if (title == null|| title.length == 0) {
+            title = t.value
+        }
+
+        title = encodeURI(title)
+        title = title.replaceAll("%", '_')
+
+        r = new Request(s.value + site.value + "/merge/" + t.value + "?t=" + title,
+            {method:"PUT"});
+        fetch(r).then(response => c.innerHTML = "merged");
+    })
 }
 
 var nextLoadingTime = "00:00:00"
@@ -236,14 +228,9 @@ chrome.devtools.network.onRequestFinished.addListener(
             } else if ((/\.m3u8/g).test(a.request.url)) {
                 log("got m3u8: " + a.request.url);
 
-                a.getContent(
-                    function(b){
-                        r = new Request(s.value + "duboku/index/" + t.value,
-                            {method:"POST",body:b});
+                handleM3u8(a);
 
-                        fetch(r).then (res => load());
-                    }
-                );
+                
             } else {
                 //log("Not matched: " + a.request.url);
             }
@@ -254,3 +241,22 @@ chrome.devtools.network.onRequestFinished.addListener(
         
     }
 );
+
+function handleM3u8(a) {
+    var iyfRe = /\/([\w\d-]+)\.mp4\//g
+    iyfResult = iyfRe.exec(a.request.url)
+    if (iyfResult) {
+        log("Found iyf m3u8")
+        id = iyfResult[1]
+        title.value = id
+    }
+
+    a.getContent(
+        function(b){
+            r = new Request(s.value + "duboku/index/" + t.value,
+                {method:"POST",body:b});
+
+            fetch(r).then (res => load());
+        }
+    );    
+}
