@@ -76,7 +76,10 @@ function merge() {
     log("Got merge request ");
     tabId = chrome.devtools.inspectedWindow.tabId
     chrome.tabs.get(tabId, tab => {
-        title = tab.title.split("-")[0]
+        var index = tab.title.indexOf("-免费在线观看");
+        if (index > -1) {
+            title = title.substring(0, index);
+        }
 
         if (title == null|| title.length == 0) {
             title = t.value
