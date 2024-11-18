@@ -140,17 +140,6 @@ function clickRight(callback, times) {
     );
 }
 
-function callMultipleTimes(fn, times, callback) {
-    if (times > 0) {
-      fn(() => {
-        //log("Time: " + times);
-        callMultipleTimes(fn, times - 1, callback);
-      });
-    } else {
-      callback();
-    }
-  }
-
 function moveCloser() {
     getCurrentDisplayTime(function(currentDisplayTime, isException) {
         if (isException) {
@@ -200,6 +189,11 @@ chrome.devtools.network.onRequestFinished.addListener(
             // log("got " + a.request.url);
             var results = (/\/([\w\d_-]+\.ts)/g).exec(a.request.url);
             if (results) {
+                if (currentTabId == -1) {
+                    log("Current tab id is not inited.");
+                    return;
+                }
+
                 var tsName = results[1];
                 // log("got2 " + tsName);
                 a.getContent(
@@ -243,6 +237,8 @@ chrome.devtools.network.onRequestFinished.addListener(
     }
 );
 
+
+var currentTabId = -1
 function handleM3u8(a) {
     var iyfRe = /\/([\w\d-]+)\.mp4\//g
     iyfResult = iyfRe.exec(a.request.url)
@@ -250,6 +246,8 @@ function handleM3u8(a) {
         log("Found iyf m3u8")
         id = iyfResult[1]
         title.value = id
+
+        currentTabId = chrome.devtools.inspectedWindow.tabId
     }
 
     a.getContent(
@@ -261,3 +259,16 @@ function handleM3u8(a) {
         }
     );    
 }
+
+chrome.tabs.onUpdated.addListener(
+    (tabId, changeInfo, tab) => {
+        if (tabId != currentTabId) {
+            return;
+        }
+
+        if (changeInfo && changeInfo.url) {
+            currentTabId = -1
+            log("Tab url has changed")
+        }
+    }
+  )
