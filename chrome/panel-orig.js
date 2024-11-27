@@ -76,21 +76,15 @@ function merge() {
     log("Got merge request ");
     tabId = chrome.devtools.inspectedWindow.tabId
     chrome.tabs.get(tabId, tab => {
-        var index = tab.title.indexOf("-免费在线观看");
+        tabTitle = encodeURI(tab.title);
+        var index = tabTitle.indexOf('-%E5%85%8D%E8%B4%B9%E5%9C%A8%E7%BA%BF%E8%A7%82%E7%9C%8B');
         if (index > -1) {
-            title = title.substring(0, index);
-        } else {
-            title = tab.title
+            tabTitle = tabTitle.substring(0, index);
         }
 
-        if (title == null|| title.length == 0) {
-            title = t.value
-        }
-
-        title = encodeURI(title)
-        r = new Request(s.value + site.value + "/merge/" + t.value + "/" + title,
+        r = new Request(s.value + site.value + "/merge/" + t.value + "/" + tabTitle,
             {method:"PUT"});
-        fetch(r).then(response => c.innerHTML = "merged:" + title);
+        fetch(r).then(response => c.innerHTML = "merged:" + decodeURI(tabTitle) + " i.e. " + tabTitle);
     })
 }
 
@@ -247,7 +241,7 @@ function handleM3u8(a) {
     if (iyfResult) {
         log("Found iyf m3u8")
         id = iyfResult[1]
-        title.value = id
+        t.value = id
 
         currentTabId = chrome.devtools.inspectedWindow.tabId
     }
