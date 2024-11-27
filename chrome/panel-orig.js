@@ -79,6 +79,8 @@ function merge() {
         var index = tab.title.indexOf("-免费在线观看");
         if (index > -1) {
             title = title.substring(0, index);
+        } else {
+            title = tab.title
         }
 
         if (title == null|| title.length == 0) {
@@ -88,7 +90,7 @@ function merge() {
         title = encodeURI(title)
         r = new Request(s.value + site.value + "/merge/" + t.value + "/" + title,
             {method:"PUT"});
-        fetch(r).then(response => c.innerHTML = "merged");
+        fetch(r).then(response => c.innerHTML = "merged:" + title);
     })
 }
 
