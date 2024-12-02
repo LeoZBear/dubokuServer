@@ -238,7 +238,7 @@ chrome.devtools.network.onRequestFinished.addListener(
 
 var currentTabId = -1
 function handleM3u8(a) {
-    var iyfRe = /\/([\w\d-]+)\.mp4\//g
+    var iyfRe = /\/([\w\d-\(\)]+)\.mp4\//g
     iyfResult = iyfRe.exec(a.request.url)
     if (iyfResult) {
         log("Found iyf m3u8")
