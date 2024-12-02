@@ -44,6 +44,8 @@ function convertTime(sec) {
 
 function load() {
     //log("Got Load request ");
+    currentTabId = chrome.devtools.inspectedWindow.tabId
+    
     r = new Request(s.value + site.value + "/load/" + t.value,
         {method:"GET"});
 
