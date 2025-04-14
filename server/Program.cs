@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Web;
 using Duboku;
@@ -56,6 +57,35 @@ app.MapPut("duboku/merge/{filename}/{title}", async (string filename, string tit
     var target = Path.Combine(home, $"duboku/{title}.mp4");
     if (File.Exists(target)) {
         File.Delete(target);
+    }
+
+    var ffmpegPath = Path.Combine(home, $"duboku/ffmpeg.exe");
+
+    if (File.Exists(ffmpegPath)) {
+        var processStartInfo = new ProcessStartInfo
+        {
+            FileName = ffmpegPath,
+            Arguments = $"-i \"{filePath}\" -c copy \"{target}\"",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+        
+        using (var process = new Process { StartInfo = processStartInfo })
+        {
+            process.Start();
+            string output = await process.StandardError.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            if (process.ExitCode != 0)
+            {
+                Console.WriteLine($"FFmpeg error: {output}");
+                throw new Exception("FFmpeg process failed.");
+            }
+        }
+
+        return 0;
     }
 
     var missing = 0;
