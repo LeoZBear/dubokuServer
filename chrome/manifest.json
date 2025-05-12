@@ -2,17 +2,14 @@
   "name" : "Leo Duboku",
   "version" : "1.2",
   "description" : "Helps debug Polymer apps.",
-  "background" : {
-    "scripts": ["background.js"]
-  },
+
   "devtools_page": "devtools.html",
-  "permissions": ["<all_urls>", "webNavigation", "activeTab", "tabs"],
+  "permissions": ["webNavigation", "activeTab", "tabs"],
   "host_permissions": [
     "http://*/*",
     "https://*/*"
   ],
-  "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
-  "manifest_version": 2,
+  "manifest_version": 3,
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
