@@ -177,9 +177,55 @@ startRightButton.addEventListener("click", function() {
   }
 );
 
+// Add this function to check if all segments are uploaded
+function areAllSegmentsUploaded() {
+    const segments = c.getElementsByTagName('li');
+    for (let i = 0; i < segments.length; i++) {
+        if (segments[i].className !== 'uploaded') {
+            return false;
+        }
+    }
+    return segments.length > 0;
+}
 
+// Add a function to verify segments from server side
+function verifyAndMerge() {
+    // First load latest state from server
+    r = new Request(s.value + site.value + "/load/" + t.value, {method:"GET"});
+    
+    fetch(r).then(response => response.json()).then(data => {
+        if (!data.success) {
+            log("Failed to verify segments from server");
+            return;
+        }
 
+        // Update local UI with latest server state
+        c.innerHTML = "";
+        for(var i = 0; i < data.segments.length; ++i) {
+            var seg = data.segments[i];
+            var time = convertTime(seg.startSec);
+            const node = document.createElement("li");
+            node.id = seg.name;
+            node.className = seg.uploaded ? 'uploaded' : 'notuploaded';
+            node.title = time;
+            node.onclick = (function (time2) {
+                return function() { showTime(time2) }
+            })(time);
 
+            c.appendChild(node);
+        }
+
+        // Check again after server refresh
+        if (areAllSegmentsUploaded()) {
+            log("Server verification complete - proceeding with merge");
+            merge();
+        } else {
+            log("Server verification shows incomplete segments - merge aborted");
+        }
+    });
+}
+
+// Modify the network listener section where uploads complete
 chrome.devtools.network.onRequestFinished.addListener(
     function(a){
 
@@ -212,6 +258,12 @@ chrome.devtools.network.onRequestFinished.addListener(
                                 nextLoadingTime = next.title;
                             } else {
                                 showStatus("Sibling not found");
+                            }
+                            
+                            // Add check for all segments uploaded
+                            if (areAllSegmentsUploaded()) {
+                                log("All segments appear uploaded - verifying with server");
+                                verifyAndMerge();
                             }
                         });
 
