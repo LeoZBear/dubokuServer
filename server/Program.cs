@@ -37,6 +37,9 @@ app.MapGet("duboku/load/{filename}", async (string filename, HttpContext context
 
 app.MapPut("duboku/merge/{filename}/{title}", async (string filename, string title, HttpContext context) =>
 {
+    // remove any special characters from title, e.g. *, /, \, :, ?, ", <, >, |
+    title = Regex.Replace(title, @"[\\/:*?""<>|]", "_");
+
     Console.WriteLine($"合并 Merge: {filename} as {title}");
 
     if (!string.IsNullOrWhiteSpace(title)) {
@@ -52,6 +55,7 @@ app.MapPut("duboku/merge/{filename}/{title}", async (string filename, string tit
     if (!Directory.Exists(targetPath)) {
         return 0;
     }
+
 
     var filePath = Path.Combine(targetPath, "index.m3u8");
     var target = Path.Combine(home, $"duboku/{title}.mp4");
