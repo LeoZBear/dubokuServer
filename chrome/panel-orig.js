@@ -11,14 +11,15 @@ var mergeButton = document.getElementById("mergeButton");
 var startRightButton = document.getElementById("startRightButton");
 
 var lc = 0;
+var debugging = false
 
 function log(msg) {
-    if (lc > 0) {
+    if (!debugging && lc > 0) {
         e.innerHTML = "";
         lc = 0;
     }
 
-    e.insertAdjacentText("afterbegin", msg + "\n");
+    e.insertAdjacentHTML("afterbegin", msg + "<br/>");
     lc++;
 }
 
@@ -290,14 +291,31 @@ chrome.devtools.network.onRequestFinished.addListener(
 
 var currentTabId = -1
 function handleM3u8(a) {
-    var iyfRe = /\/([\w\d-\(\)]+)\.mp4\//g
-    iyfResult = iyfRe.exec(a.request.url)
-    if (iyfResult) {
-        log("Found iyf m3u8")
-        id = iyfResult[1]
-        t.value = id
+    // try a different type when mp4 is not encoded:
+    // https://exchange-d71s111.pipecdn.vip/ppotb62-S71lT2yliZApDBSvkYzBsrmD3fpCJ4nBsHhTcyo5x8qE1QslJerjp8yMHZU2qtCZ1mBJ0mGKD4GKKtHIvjS34/chunklist.m3u8
 
-        currentTabId = chrome.devtools.inspectedWindow.tabId
+    var iyfRes = [
+        /\/([\w\d-\(\)]+)\.mp4\//g,
+        /\/([\w\d-]+)\/chunklist.m3u8\?/g]
+    for(var idx in iyfRes) {
+        re = iyfRes[idx]
+        log("Checking " + re)
+        iyfResult = re.exec(a.request.url)
+        if (iyfResult) {
+            log("Found iyf m3u8")
+            id = iyfResult[1]
+            t.value = id
+
+            currentTabId = chrome.devtools.inspectedWindow.tabId
+            break
+        } else {
+            log("Not this iyf m3u8")
+        }
+    }
+
+    if (t.value == "") {
+        log("No iyf m3u8 found: " + a.request.url)
+        return
     }
 
     a.getContent(
