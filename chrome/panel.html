@@ -26,23 +26,31 @@
       display: inline;
       float: left;
     }
+
+    .log-text {
+      display: inline-block;   /* allows width control */
+      max-width: 200px;        /* set a limit */
+      white-space: normal;     /* allow wrapping */
+      word-wrap: break-word;   /* break long words if needed */
+    }
   </style>
   </head>
   <body unresolved="">
     <input id="Server" value="http://127.0.0.1:5000/" hidden>
     <input id="site" value="duboku" hidden>
     <input id="title" value="">
-
+    
     <button id="loadButton"> Load </button>
     <button id="mergeButton"> Merge </button>
     <input id="StartFreq" value="800" style="width:50pt">ms
     <button id="startRightButton"> StartRight </button>
-
+    
     Current progress: <div id="status"></div>
-    <div id="content"></div>
     <div>
       <ul id="canvas"></ul>
     </div>
+    <br/>
+    <div id="logPanel"></div>
 
     <script src="panel-orig.js"></script>
     <script src="panel.js"></script>

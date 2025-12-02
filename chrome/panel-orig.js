@@ -1,4 +1,4 @@
-var e=document.getElementById("content");
+var e=document.getElementById("logPanel");
 var t=document.getElementById("title");
 var s=document.getElementById("Server");
 var statusBoard=document.getElementById("status");
@@ -13,14 +13,37 @@ var startRightButton = document.getElementById("startRightButton");
 var lc = 0;
 var debugging = false
 
+function formatDate() {
+  const date = new Date();
+  const yyyy = date.getFullYear();
+  const MM = String(date.getMonth() + 1).padStart(2, '0'); // months are 0-based
+  const dd = String(date.getDate()).padStart(2, '0');
+  const HH = String(date.getHours()).padStart(2, '0');
+  const mm = String(date.getMinutes()).padStart(2, '0');
+  const ss = String(date.getSeconds()).padStart(2, '0');
+
+  return `${yyyy}-${MM}-${dd} ${HH}:${mm}:${ss}`;
+}
+
 function log(msg) {
-    if (!debugging && lc > 0) {
+    var prefix = formatDate()
+
+    if (lc > 10000) {
         e.innerHTML = "";
         lc = 0;
     }
 
-    e.insertAdjacentHTML("afterbegin", msg + "<br/>");
+    e.insertAdjacentHTML("beforeend", prefix + " " + msg + "<br/>");
     lc++;
+}
+
+function debug(msg) {
+    if (!debugging) {
+        return;
+    }
+
+    msg = "[Debug] " + msg;
+    log(msg);
 }
 
 function showStatus(msg) {
@@ -44,7 +67,7 @@ function convertTime(sec) {
 }
 
 function load() {
-    //log("Got Load request ");
+    log("Got Load request ");
     currentTabId = chrome.devtools.inspectedWindow.tabId
     
     r = new Request(s.value + site.value + "/load/" + t.value,
@@ -266,6 +289,8 @@ chrome.devtools.network.onRequestFinished.addListener(
                                 log("All segments appear uploaded - verifying with server");
                                 verifyAndMerge();
                             }
+                        }).catch(error => {
+                            log("Error uploading segment " + tsName + ": " + error);
                         });
 
                         b = "";
@@ -273,10 +298,7 @@ chrome.devtools.network.onRequestFinished.addListener(
                 )
             } else if ((/\.m3u8/g).test(a.request.url)) {
                 log("got m3u8: " + a.request.url);
-
-                handleM3u8(a);
-
-                
+                handleM3u8(a);                
             } else {
                 //log("Not matched: " + a.request.url);
             }
@@ -299,17 +321,17 @@ function handleM3u8(a) {
         /\/([\w\d-]+)\/chunklist.m3u8\?/g]
     for(var idx in iyfRes) {
         re = iyfRes[idx]
-        log("Checking " + re)
+        debug("Checking " + re)
         iyfResult = re.exec(a.request.url)
         if (iyfResult) {
-            log("Found iyf m3u8")
+            debug("Found iyf m3u8")
             id = iyfResult[1]
             t.value = id
 
             currentTabId = chrome.devtools.inspectedWindow.tabId
             break
         } else {
-            log("Not this iyf m3u8")
+            debug("Not this iyf m3u8")
         }
     }
 
@@ -323,7 +345,16 @@ function handleM3u8(a) {
             r = new Request(s.value + "duboku/index/" + t.value,
                 {method:"POST",body:b});
 
-            fetch(r).then (res => load());
+            fetch(r).then (res => {
+                if (res.status != 200) {
+                    log("Failed to send m3u8 to server: " + res.status);
+                    return;
+                }
+
+                load();
+            }).catch(error => {
+                log("Error sending m3u8 to server: " + error);
+            });
         }
     );    
 }
@@ -336,7 +367,7 @@ chrome.tabs.onUpdated.addListener(
 
         if (changeInfo && changeInfo.url) {
             currentTabId = -1
-            log("Tab url has changed")
+            debug("Tab url has changed")
         }
     }
   )
