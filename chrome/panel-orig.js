@@ -146,6 +146,15 @@ function getTimeDifference(currentDisplayTime) {
     return nextTime - curTime;
 }
 
+function arrayBufferToBase64(buffer) {
+    var binary = '';
+    var bytes = new Uint8Array(buffer);
+    for (var i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+}
+
 function getCurrentDisplayTime(callback) {
     chrome.devtools.inspectedWindow.eval(
         'document.querySelector("vg-time-display span").innerText',
@@ -266,33 +275,45 @@ chrome.devtools.network.onRequestFinished.addListener(
                 // log("got2 " + tsName);
                 a.getContent(
                     function(b){
-                        var r = new Request(s.value + "duboku/seg/" + t.value + "/" + tsName,
-                            {method:"POST",body:b});
-        
-                        fetch(r).then(response => {
-                            if (response.status != 200) {
-                                return;
-                            }
+                        var uploadSegment = function(payload) {
+                            var r = new Request(s.value + "duboku/seg/" + t.value + "/" + tsName,
+                                {method:"POST",body:payload});
+    
+                            fetch(r).then(response => {
+                                if (response.status != 200) {
+                                    return;
+                                }
 
-                            var c = document.getElementById(tsName);
-                            c.className = "uploaded";
-                            var next = c.nextSibling;
-                            if (next) {
-                                showStatus(next.title);
-                                nextLoadingTime = next.title;
-                            } else {
-                                showStatus("Sibling not found");
-                            }
-                            
-                            // Add check for all segments uploaded
-                            if (areAllSegmentsUploaded()) {
-                                log("All segments appear uploaded - verifying with server");
-                                verifyAndMerge();
-                            }
-                        }).catch(error => {
-                            log("Error uploading segment " + tsName + ": " + error);
-                        });
+                                var node = document.getElementById(tsName);
+                                node.className = "uploaded";
+                                var next = node.nextSibling;
+                                if (next) {
+                                    showStatus(next.title);
+                                    nextLoadingTime = next.title;
+                                } else {
+                                    showStatus("Sibling not found");
+                                }
+                                
+                                // Add check for all segments uploaded
+                                if (areAllSegmentsUploaded()) {
+                                    log("All segments appear uploaded - verifying with server");
+                                    verifyAndMerge();
+                                }
+                            }).catch(error => {
+                                log("Error uploading segment " + tsName + ": " + error);
+                            });
+                        };
 
+                        if (!b) {
+                            log("Segment content evicted; fetching directly: " + a.request.url);
+                            fetch(a.request.url)
+                                .then(res => res.arrayBuffer())
+                                .then(buffer => uploadSegment(arrayBufferToBase64(buffer)))
+                                .catch(error => log("Direct fetch failed for " + tsName + ": " + error));
+                            return;
+                        }
+
+                        uploadSegment(b);
                         b = "";
                     }
                 )
