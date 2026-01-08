@@ -63,7 +63,9 @@ app.MapPut("duboku/merge/{filename}/{title}", async (string filename, string tit
         File.Delete(target);
     }
 
-    var ffmpegPath = Path.Combine(home, $"duboku/ffmpeg.exe");
+    var ffmpegPath = Path.DirectorySeparatorChar == '/' ?
+        "/usr/local/bin/ffmpeg" :
+        "duboku/ffmpeg.exe";
 
     if (File.Exists(ffmpegPath)) {
         var processStartInfo = new ProcessStartInfo
