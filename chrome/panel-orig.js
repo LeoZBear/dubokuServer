@@ -88,7 +88,7 @@ function load() {
             const node = document.createElement("li");
             node.id = seg.name;
             node.className = seg.uploaded ? 'uploaded' : 'notuploaded';
-            node.title = time;
+            node.title = "" + time + " " + seg.name;
             node.onclick = (function (time2) {
                 return function() { showTime(time2) }
             })(time);
@@ -261,7 +261,6 @@ function verifyAndMerge() {
 // Modify the network listener section where uploads complete
 chrome.devtools.network.onRequestFinished.addListener(
     function(a){
-
         if (a.request && a.request.url) {
             // log("got " + a.request.url);
             var results = (/\/([\w\d_-]+\.ts)/g).exec(a.request.url);
@@ -305,7 +304,7 @@ chrome.devtools.network.onRequestFinished.addListener(
                         };
 
                         if (!b) {
-                            log("Segment content evicted; fetching directly: " + a.request.url);
+                            log("Segment content evicted; fetching directly: " + tsName);
                             fetch(a.request.url)
                                 .then(res => res.arrayBuffer())
                                 .then(buffer => uploadSegment(arrayBufferToBase64(buffer)))
