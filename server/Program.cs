@@ -10,6 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddCors();
+builder.WebHost.ConfigureKestrel(options => { options.Limits.MaxRequestBodySize = 100_000_000; }); // 100 MB
 
 var app = builder.Build();
 
