@@ -1,58 +1,152 @@
-<html><head>
-  <style type="text/css">
-    body {
-      background-color: black;
-      margin: 0;
-      color: white;
-    }
+<html>
+  <head>
+    <title>Duboku Panel</title>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    <style type="text/css">
+      :root {
+        --background-color: #1e1e1e;
+        --text-color: #d4d4d4;
+        --header-background: #333;
+        --panel-background: #252526;
+        --button-background: #007acc;
+        --button-hover-background: #005f9e;
+        --green: #4caf50;
+        --grey: #aeaeae;
+      }
 
-    li {
-        width: 3pt;
-        height: 3pt;
-        margin: 1pt;
-        padding: 3pt;
-        border-radius: 5pt;
-    }
+      body {
+        background-color: var(--background-color);
+        color: var(--text-color);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+      }
 
-    .uploaded {
-        background-color: green;
-    }
-    
-    .notuploaded {
-        background-color: #aeaeae;
-    }
-    
-    ul li {
-      display: inline;
-      float: left;
-    }
+      .header {
+        display: flex;
+        align-items: center;
+        padding: 8px;
+        background-color: var(--header-background);
+        gap: 8px;
+      }
 
-    .log-text {
-      display: inline-block;   /* allows width control */
-      max-width: 200px;        /* set a limit */
-      white-space: normal;     /* allow wrapping */
-      word-wrap: break-word;   /* break long words if needed */
-    }
-  </style>
+      .header input[type='text'] {
+        background-color: var(--panel-background);
+        color: var(--text-color);
+        border: 1px solid var(--header-background);
+        padding: 4px;
+      }
+      
+      .header button {
+        background-color: var(--button-background);
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        cursor: pointer;
+        border-radius: 4px;
+      }
+
+      .header button:hover {
+        background-color: var(--button-hover-background);
+      }
+
+      .freq-container {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .main {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        padding: 8px;
+        overflow-y: auto;
+      }
+
+      .canvas-container {
+        flex-grow: 1;
+        margin-bottom: 8px;
+        display: flex;
+        justify-content: center;
+      }
+
+      .log-panel {
+        background-color: var(--panel-background);
+        border: 1px solid var(--header-background);
+        padding: 8px;
+        min-height: 100px;
+        max-height: 300px;
+        overflow-y: scroll;
+        white-space: pre-wrap;
+      }
+
+      .footer {
+        padding: 8px;
+        background-color: var(--header-background);
+        text-align: center;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+      }
+
+      li {
+          width: 3pt;
+          height: 3pt;
+          margin: 1pt;
+          padding: 3pt;
+          border-radius: 5pt;
+      }
+
+      .uploaded {
+          background-color: var(--green);
+      }
+      
+      .notuploaded {
+          background-color: var(--grey);
+      }
+      
+      ul li {
+        display: inline-block;
+      }
+
+      .log-text {
+        max-width: 100%;
+        word-wrap: break-word;
+      }
+    </style>
   </head>
-  <body unresolved="">
+  <body>
     <input id="Server" value="http://127.0.0.1:5000/" hidden>
     <input id="site" value="duboku" hidden>
-    <input id="title" value="">
-    
-    <button id="loadButton"> Load </button>
-    <button id="mergeButton"> Merge </button>
-    <input id="StartFreq" value="800" style="width:50pt">ms
-    <button id="startRightButton"> StartRight </button>
-    
-    Current progress: <div id="status"></div>
-    <div>
-      <ul id="canvas"></ul>
-    </div>
-    <br/>
-    <div id="logPanel"></div>
 
-    <script src="panel-orig.js"></script>
-    <script src="panel.js"></script>
+    <div class="header">
+      <input id="title" value="" placeholder="Enter title here">
+      <button id="loadButton"> Load </button>
+      <button id="mergeButton"> Merge </button>
+      <div class="freq-container">
+        <input id="StartFreq" value="800" style="width:50pt">
+        <span>ms</span>
+      </div>
+      <button id="startRightButton"> StartRight </button>
+    </div>
+
+    <div class="main">
+      <div class="canvas-container">
+        <ul id="canvas"></ul>
+      </div>
+      <div id="logPanel" class="log-panel"></div>
+    </div>
+
+    <div class="footer">
+      <span>Current progress:</span>
+      <div id="status"></div>
+    </div>
+
+    <script src="panel-orig.js" defer></script>
+    <script src="panel.js" defer></script>
   </body>
 </html>
