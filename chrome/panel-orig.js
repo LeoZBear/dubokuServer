@@ -110,7 +110,7 @@ function merge() {
 
         r = new Request(s.value + site.value + "/merge/" + t.value + "/" + tabTitle,
             {method:"PUT"});
-        fetch(r).then(response => c.innerHTML = "merged:" + decodeURI(tabTitle) + " i.e. " + tabTitle);
+        fetch(r).then(response => c.innerHTML = "merged:" + decodeURI(tabTitle));
     })
 }
 
