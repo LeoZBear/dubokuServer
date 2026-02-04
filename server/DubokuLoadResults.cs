@@ -6,6 +6,7 @@ namespace Duboku {
         public string Name {get;set;} = "";
         public int StartSec {get;set;} = 0;
         public bool Uploaded {get;set;} = false;
+        public string Url {get;set;} = "";
     }
 
     public class DubokuLoadResults {
@@ -35,11 +36,16 @@ namespace Duboku {
                     seg = new DubokuSegment();
                     var sec = Convert.ToDouble(line.Substring("#EXTINF:".Length, line.Length - 1 - "#EXTINF:".Length));
                     startSec += sec;
-                } else if (line.EndsWith(".ts") && seg != null) {
-                    seg.Name = line;
+                } else if ((line.EndsWith(".ts") || line.Contains(".ts?")) && seg != null) {
+                    var filePath = line.Substring(0, line.IndexOf(".ts") + 3);
+                    var filePathParts = filePath.Split('/');
+                    var tsFile = filePathParts[filePathParts.Length - 1];
+
+                    seg.Name = tsFile;
+                    seg.Url = line;
                     seg.StartSec = (int) startSec;
 
-                    if (allFiles.Contains(line)) {
+                    if (allFiles.Contains(tsFile)) {
                         seg.Uploaded = true;
                     }
 

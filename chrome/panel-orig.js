@@ -9,6 +9,7 @@ var startFreq = document.getElementById("StartFreq");
 var loadButton = document.getElementById("loadButton");
 var mergeButton = document.getElementById("mergeButton");
 var startRightButton = document.getElementById("startRightButton");
+var asyncDownloadButton = document.getElementById("asyncDownloadButton");
 
 var lc = 0;
 var debugging = false
@@ -64,6 +65,42 @@ function convertTime(sec) {
     return subConvertTime(hours) + ":"
             + subConvertTime(minutes) + ":"
             + subConvertTime(seconds);
+}
+
+function uploadSegment(tsName, payload) {
+    var r = new Request(s.value + "duboku/seg/" + t.value + "/" + tsName,
+        {method:"POST",body:payload});
+
+    fetch(r).then(response => {
+        if (response.status != 200) {
+            return;
+        }
+
+        var node = document.getElementById(tsName);
+        node.className = "uploaded";
+        var next = node.nextSibling;
+        if (next) {
+            showStatus(next.title);
+            nextLoadingTime = next.title;
+        } else {
+            showStatus("Sibling not found");
+        }
+        
+        // Add check for all segments uploaded
+        if (areAllSegmentsUploaded()) {
+            log("All segments appear uploaded - verifying with server");
+            verifyAndMerge();
+        }
+    }).catch(error => {
+        log("Error uploading segment " + tsName + ": " + error);
+    });
+};
+
+function asyncDownloadSeg(url, tsName) {
+    fetch(url)
+        .then(res => res.arrayBuffer())
+        .then(buffer => uploadSegment(arrayBufferToBase64(buffer)))
+        .catch(error => log("Direct fetch failed for " + tsName + ": " + error));               
 }
 
 function load() {
@@ -201,14 +238,38 @@ startRightButton.addEventListener("click", function() {
     if (scheduledNext) {
         clearTimeout(scheduledNext);
         scheduledNext = null;
-        startRightButton.innerText = ' StartRight ';
+        startRightButton.innerText = 'StartRight';
     } else {
-        startRightButton.innerText = ' StopRight ';
+        startRightButton.innerText = 'StopRight';
         moveCloser();
         scheduledNext = setInterval(moveCloser, parseInt(startFreq.value));
     }
   }
 );
+
+var asyncDownloading = false;
+asyncDownloadButton.addEventListener("click", function() {
+    if (asyncDownloading) {
+        asyncDownloading = false;
+        asyncDownloadButton.innerText = 'AsyncDownload';
+    } else {
+        asyncDownloading = true;
+        asyncDownloadButton.innerText = 'StopAsyncDownload';
+        startAsyncDownload();
+    }
+  }
+);
+
+function startAsyncDownload() {
+    const segments = c.getElementsByTagName('li');
+    for (let i = 0; i < segments.length; i++) {
+        if (segments[i].className !== 'uploaded') {
+            return false;
+        }
+    }
+    return segments.length > 0;
+}
+
 
 // Add this function to check if all segments are uploaded
 function areAllSegmentsUploaded() {
@@ -241,6 +302,7 @@ function verifyAndMerge() {
             node.id = seg.name;
             node.className = seg.uploaded ? 'uploaded' : 'notuploaded';
             node.title = time;
+            node.url = seg.url;
             node.onclick = (function (time2) {
                 return function() { showTime(time2) }
             })(time);
@@ -270,49 +332,21 @@ chrome.devtools.network.onRequestFinished.addListener(
                     return;
                 }
 
+                if (asyncDownloading) {
+                    return;
+                }
+
                 var tsName = results[1];
                 // log("got2 " + tsName);
                 a.getContent(
                     function(b){
-                        var uploadSegment = function(payload) {
-                            var r = new Request(s.value + "duboku/seg/" + t.value + "/" + tsName,
-                                {method:"POST",body:payload});
-    
-                            fetch(r).then(response => {
-                                if (response.status != 200) {
-                                    return;
-                                }
-
-                                var node = document.getElementById(tsName);
-                                node.className = "uploaded";
-                                var next = node.nextSibling;
-                                if (next) {
-                                    showStatus(next.title);
-                                    nextLoadingTime = next.title;
-                                } else {
-                                    showStatus("Sibling not found");
-                                }
-                                
-                                // Add check for all segments uploaded
-                                if (areAllSegmentsUploaded()) {
-                                    log("All segments appear uploaded - verifying with server");
-                                    verifyAndMerge();
-                                }
-                            }).catch(error => {
-                                log("Error uploading segment " + tsName + ": " + error);
-                            });
-                        };
-
                         if (!b) {
                             log("Segment content evicted; fetching directly: " + tsName);
-                            fetch(a.request.url)
-                                .then(res => res.arrayBuffer())
-                                .then(buffer => uploadSegment(arrayBufferToBase64(buffer)))
-                                .catch(error => log("Direct fetch failed for " + tsName + ": " + error));
+                            asyncDownloadSeg(a.request.url, tsName);
                             return;
                         }
 
-                        uploadSegment(b);
+                        uploadSegment(tsName, b);
                         b = "";
                     }
                 )

@@ -130,8 +130,7 @@ app.MapPost("duboku/index/{filename}", async (string filename, HttpContext conte
         Directory.CreateDirectory(targetPath);
     }
 
-    var filePath = Path.Combine(targetPath, "index.m3u");
-    var finalFile = Path.Combine(targetPath, "index.m3u8");
+    var filePath = Path.Combine(targetPath, "index.m3u8");
 
     using (var sr = new StreamReader(context.Request.Body))
     {
@@ -148,20 +147,6 @@ app.MapPost("duboku/index/{filename}", async (string filename, HttpContext conte
             await File.WriteAllTextAsync(filePath, temp);
         }
     }
-
-    var regex = new Regex(@"\/?([\w\d_-]*\.ts)\??");
-    var list = new List<string>();
-    foreach(var line in await File.ReadAllLinesAsync(filePath)) {
-        var match = regex.Match(line);
-        if (match.Success) {
-            var name = match.Groups[1].Value;
-            list.Add(name);
-        } else {
-            list.Add(line);
-        }
-    }
-
-    await File.WriteAllLinesAsync(finalFile, list);
 
     return Task.CompletedTask;
 })
