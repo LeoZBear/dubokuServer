@@ -87,12 +87,17 @@ function uploadSegment(payload, tsName) {
     });
 };
 
-function asyncDownloadSeg(url, tsName) {
+function asyncDownloadSeg(url, tsName, onFailed) {
     r = new Request(url, {method:"GET"});
     fetch(r)
         .then(res => res.arrayBuffer())
         .then(buffer => uploadSegment(arrayBufferToBase64(buffer), tsName))
-        .catch(error => log("Direct fetch failed for " + tsName + " (" + url +"): " + error));               
+        .catch(error => {
+            log("Direct fetch failed for " + tsName + " (" + url +"): " + error);
+            if (onFailed) {
+                onFailed(tsName);
+            }
+        });               
 }
 
 function load() {
@@ -213,7 +218,9 @@ function downloadSegments(top) {
         }
 
         debug("Async downloading " + tsName + " from " + url);
-        asyncDownloadSeg(url, tsName);
+        asyncDownloadSeg(url, tsName, function(failedTsName) {
+            segmentNode.className = "notuploaded";
+        });
     });
 }
 
@@ -301,9 +308,7 @@ function verifyAndMerge() {
 chrome.devtools.network.onRequestFinished.addListener(
     function(a){
         if (a.request && a.request.url) {
-            if (asyncDownloading == true && urlPref != "") {
-                return;
-            }
+
 
             // log("got " + a.request.url);
             var results = (/\/([\w\d_-]+\.ts)/g).exec(a.request.url);
@@ -312,11 +317,16 @@ chrome.devtools.network.onRequestFinished.addListener(
                     log("Current tab id is not inited.");
                     return;
                 }
+                newUrlPref = a.request.url.substring(0, a.request.url.indexOf(results[1]));
 
-                if (urlPref == "") {
-                    urlPref = a.request.url.substring(0, a.request.url.indexOf(results[1]));
+                if (newUrlPref != urlPref) {
+                    urlPref = newUrlPref;
                     log("Set urlPref to " + urlPref);
                 }
+
+            if (asyncDownloading == true && urlPref != "") {
+                return;
+            }
 
                 var tsName = results[1];
                 // log("got2 " + tsName);
