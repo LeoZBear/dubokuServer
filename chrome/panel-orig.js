@@ -4,11 +4,9 @@ var s=document.getElementById("Server");
 var statusBoard=document.getElementById("status");
 var site = document.getElementById("site");
 var c = document.getElementById("canvas");
-var startFreq = document.getElementById("StartFreq");
 
 var loadButton = document.getElementById("loadButton");
 var mergeButton = document.getElementById("mergeButton");
-var startRightButton = document.getElementById("startRightButton");
 var asyncDownloadButton = document.getElementById("asyncDownloadButton");
 
 var lc = 0;
@@ -78,13 +76,6 @@ function uploadSegment(payload, tsName) {
 
         var node = document.getElementById(tsName);
         node.className = "uploaded";
-        var next = node.nextSibling;
-        if (next) {
-            showStatus(next.title);
-            nextLoadingTime = next.title;
-        } else {
-            showStatus("Sibling not found");
-        }
         
         // Add check for all segments uploaded
         if (areAllSegmentsUploaded()) {
@@ -154,7 +145,6 @@ function merge() {
     })
 }
 
-var nextLoadingTime = "00:00:00"
 function showTime(time) {
     log(time);
 }
@@ -162,29 +152,6 @@ function showTime(time) {
 loadButton.addEventListener("click", load);
 mergeButton.addEventListener("click", merge);
 
-function parseTime(time) {
-    var parts = time.split(":");
-
-    var hours = 0;
-    var minutes = 0;
-    var seconds = 0;
-    if (parts.length == 3) {
-        hours = parseInt(parts[0]);
-        minutes = parseInt(parts[1]);
-        seconds = parseInt(parts[2]);
-    } else {
-        minutes = parseInt(parts[0]);
-        seconds = parseInt(parts[1]);
-    }
-
-    return hours * 3600 + minutes * 60 + seconds;
-}
-
-function getTimeDifference(currentDisplayTime) {
-    var nextTime = parseTime(nextLoadingTime);
-    var curTime = parseTime(currentDisplayTime);
-    return nextTime - curTime;
-}
 
 function arrayBufferToBase64(buffer) {
     var binary = '';
@@ -194,61 +161,6 @@ function arrayBufferToBase64(buffer) {
     }
     return btoa(binary);
 }
-
-function getCurrentDisplayTime(callback) {
-    chrome.devtools.inspectedWindow.eval(
-        'document.querySelector("vg-time-display span").innerText',
-        callback
-    );
-}
-
-function clickRight(callback, times) {
-    //log("/clickRight " + times + "/ ");
-    times = 1;
-    chrome.devtools.inspectedWindow.eval(
-        'var e = document.getElementsByClassName("overlay-play-container")[0]; for(var i = 0; i < ' + times + '; ++i) { e.dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowRight", code: "ArrowRight", keyCode:39, which:39, bubbles:true}));}',
-        callback
-    );
-}
-
-function moveCloser() {
-    getCurrentDisplayTime(function(currentDisplayTime, isException) {
-        if (isException) {
-            log("Fetching Display time: "+ isException);
-        } else {
-            log("DisplayTime :" + currentDisplayTime)
-            var seconds = getTimeDifference(currentDisplayTime);
-            //log("Time difference: "+ seconds);
-            if (seconds > 0) {
-                var times = Math.floor(seconds / 5);
-
-                clickRight(function(result, isException) {
-                    if (isException) {
-                        log("Error: "+ isException);
-                    } else {
-                        //log("clicked success");
-                    }
-                }, times)
-            }
-
-        }
-    })
-
-}
-
-var scheduledNext = null;
-startRightButton.addEventListener("click", function() {
-    if (scheduledNext) {
-        clearTimeout(scheduledNext);
-        scheduledNext = null;
-        startRightButton.innerText = 'StartRight';
-    } else {
-        startRightButton.innerText = 'StopRight';
-        moveCloser();
-        scheduledNext = setInterval(moveCloser, parseInt(startFreq.value));
-    }
-  }
-);
 
 var asyncDownloading = false;
 asyncDownloadButton.addEventListener("click", function() {
@@ -300,7 +212,7 @@ function downloadSegments(top) {
             return;
         }
 
-        log("Async downloading " + tsName + " from " + url);
+        debug("Async downloading " + tsName + " from " + url);
         asyncDownloadSeg(url, tsName);
     });
 }
@@ -372,7 +284,6 @@ function verifyAndMerge() {
                 return function() { showTime(time2) }
             })(time);
 
-            segmentUrls[seg.name] = seg.url;
             c.appendChild(node);
         }
 
@@ -493,6 +404,7 @@ chrome.tabs.onUpdated.addListener(
 
         if (changeInfo && changeInfo.url) {
             currentTabId = -1
+            segmentUrls = {}
             debug("Tab url has changed")
         }
     }
