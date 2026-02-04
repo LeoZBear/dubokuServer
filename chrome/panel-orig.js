@@ -67,7 +67,7 @@ function convertTime(sec) {
             + subConvertTime(seconds);
 }
 
-function uploadSegment(tsName, payload) {
+function uploadSegment(payload, tsName) {
     var r = new Request(s.value + "duboku/seg/" + t.value + "/" + tsName,
         {method:"POST",body:payload});
 
@@ -99,8 +99,8 @@ function uploadSegment(tsName, payload) {
 function asyncDownloadSeg(url, tsName) {
     fetch(url)
         .then(res => res.arrayBuffer())
-        .then(buffer => uploadSegment(arrayBufferToBase64(buffer)))
-        .catch(error => log("Direct fetch failed for " + tsName + ": " + error));               
+        .then(buffer => uploadSegment(arrayBufferToBase64(buffer), tsName))
+        .catch(error => log("Direct fetch failed for " + tsName + " (" + url +"): " + error));               
 }
 
 function load() {
@@ -346,7 +346,7 @@ chrome.devtools.network.onRequestFinished.addListener(
                             return;
                         }
 
-                        uploadSegment(tsName, b);
+                        uploadSegment(b, tsName);
                         b = "";
                     }
                 )
