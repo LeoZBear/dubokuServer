@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Web;
 using Duboku;
-using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -59,6 +58,9 @@ app.MapPut("duboku/merge/{filename}/{title}", async (string filename, string tit
 
 
     var filePath = Path.Combine(targetPath, "index.m3u8");
+    var trimmedFilePath = Path.Combine(targetPath, "index-trimmed.m3u8");
+    await trimM3u8Async(filePath, trimmedFilePath);
+
     var target = Path.Combine(home, $"duboku/{title}.mp4");
     if (File.Exists(target)) {
         File.Delete(target);
@@ -72,7 +74,7 @@ app.MapPut("duboku/merge/{filename}/{title}", async (string filename, string tit
         var processStartInfo = new ProcessStartInfo
         {
             FileName = ffmpegPath,
-            Arguments = $"-i \"{filePath}\" -c copy \"{target}\"",
+            Arguments = $"-i \"{trimmedFilePath}\" -c copy \"{target}\"",
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
@@ -119,6 +121,23 @@ app.MapPut("duboku/merge/{filename}/{title}", async (string filename, string tit
 
     return missing;
 });
+
+async Task trimM3u8Async(string filePath, string trimedFilePath)
+{
+    var regex = new Regex(@"\/?([\w\d_-]*\.ts)\??");
+    var list = new List<string>();
+    foreach(var line in await File.ReadAllLinesAsync(filePath)) {
+        var match = regex.Match(line);
+        if (match.Success) {
+            var name = match.Groups[1].Value;
+            list.Add(name);
+        } else {
+            list.Add(line);
+        }
+    }
+
+    await File.WriteAllLinesAsync(trimedFilePath, list);
+}
 
 app.MapPost("duboku/index/{filename}", async (string filename, HttpContext context) =>
 {
