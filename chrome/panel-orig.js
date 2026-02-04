@@ -90,6 +90,12 @@ function uploadSegment(payload, tsName) {
 function asyncDownloadSeg(url, tsName, onFailed) {
     r = new Request(url, {method:"GET"});
     fetch(r)
+        .then(res => {
+            if (res.status != 200) {
+                throw new Error("HTTP status " + res.status);
+            }
+            return res;
+        })
         .then(res => res.arrayBuffer())
         .then(buffer => uploadSegment(arrayBufferToBase64(buffer), tsName))
         .catch(error => {
