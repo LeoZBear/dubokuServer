@@ -97,7 +97,8 @@ function uploadSegment(payload, tsName) {
 };
 
 function asyncDownloadSeg(url, tsName) {
-    fetch(url)
+    r = new Request(url, {method:"GET"});
+    fetch(r)
         .then(res => res.arrayBuffer())
         .then(buffer => uploadSegment(arrayBufferToBase64(buffer), tsName))
         .catch(error => log("Direct fetch failed for " + tsName + " (" + url +"): " + error));               
@@ -129,6 +130,8 @@ function load() {
             node.onclick = (function (time2) {
                 return function() { showTime(time2) }
             })(time);
+
+            segmentUrls[seg.name] = seg.url;
 
             c.appendChild(node);
         }
@@ -261,29 +264,67 @@ asyncDownloadButton.addEventListener("click", function() {
 );
 
 function startAsyncDownload() {
-    segments = getUncompletedSegments(5);
+    if (!asyncDownloading) {
+        return;
+    }
+
+    const maxConcurrentDownloads = 5;
+    downloadingSegments = getScheduledSegments(maxConcurrentDownloads);
+    gap = maxConcurrentDownloads - downloadingSegments.length;
+    if (gap > 0) {
+        downloadSegments(gap);
+    }
+
+    setTimeout(startAsyncDownload, 1000); // wait 1 second before next batch   
+}
+
+function downloadSegments(top) {
+    segments = getUnscheduledSegments(top);
     if (segments.length == 0) {
         log("All segments downloaded asynchronously.");
         asyncDownloading = false;
         asyncDownloadButton.innerText = 'AsyncDownload';
         return;
-    } else {
-        segments.forEach(function(segmentNode) {
-            var tsName = segmentNode.id;
-            var url = urlPref + tsName;
-            log("Async downloading " + tsName + " from " + url);
-            asyncDownloadSeg(url, tsName);
-        });
-
-        setTimeout(startAsyncDownload, 1000); // wait 1 second before next batch
     }
+
+    segments.forEach(function(segmentNode) {
+        if (segmentNode == null) {
+            return;
+        }
+
+        segmentNode.className = "downloading";
+        var tsName = segmentNode.id;
+        var url = urlPref + segmentUrls[tsName];
+        if (url.endsWith("undefined")) {
+            log("Segment URL undefined for " + tsName + ", skipping.");
+            return;
+        }
+
+        log("Async downloading " + tsName + " from " + url);
+        asyncDownloadSeg(url, tsName);
+    });
 }
 
-function getUncompletedSegments(top) {
+function getScheduledSegments(top) {
     var segmentNodes = []
     const segments = c.getElementsByTagName('li');
     for (let i = 0; i < segments.length; i++) {
-        if (segments[i].className !== 'uploaded') {
+        if (segments[i].className == 'downloading') {
+            segmentNodes.push(segments[i]);
+            if (segmentNodes.length >= top) {
+                break;
+            }
+        }
+    }
+    return segmentNodes;
+}
+
+
+function getUnscheduledSegments(top) {
+    var segmentNodes = []
+    const segments = c.getElementsByTagName('li');
+    for (let i = 0; i < segments.length; i++) {
+        if (segments[i].className == 'notuploaded') {
             segmentNodes.push(segments[i]);
             if (segmentNodes.length >= top) {
                 break;
@@ -305,6 +346,7 @@ function areAllSegmentsUploaded() {
     return segments.length > 0;
 }
 
+var segmentUrls = {};
 // Add a function to verify segments from server side
 function verifyAndMerge() {
     // First load latest state from server
@@ -320,16 +362,17 @@ function verifyAndMerge() {
         c.innerHTML = "";
         for(var i = 0; i < data.segments.length; ++i) {
             var seg = data.segments[i];
+            
             var time = convertTime(seg.startSec);
             const node = document.createElement("li");
             node.id = seg.name;
             node.className = seg.uploaded ? 'uploaded' : 'notuploaded';
             node.title = time;
-            node.url = seg.url;
             node.onclick = (function (time2) {
                 return function() { showTime(time2) }
             })(time);
 
+            segmentUrls[seg.name] = seg.url;
             c.appendChild(node);
         }
 
