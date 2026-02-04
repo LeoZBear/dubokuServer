@@ -261,13 +261,36 @@ asyncDownloadButton.addEventListener("click", function() {
 );
 
 function startAsyncDownload() {
+    segments = getUncompletedSegments(5);
+    if (segments.length == 0) {
+        log("All segments downloaded asynchronously.");
+        asyncDownloading = false;
+        asyncDownloadButton.innerText = 'AsyncDownload';
+        return;
+    } else {
+        segments.forEach(function(segmentNode) {
+            var tsName = segmentNode.id;
+            var url = urlPref + tsName;
+            log("Async downloading " + tsName + " from " + url);
+            asyncDownloadSeg(url, tsName);
+        });
+
+        setTimeout(startAsyncDownload, 1000); // wait 1 second before next batch
+    }
+}
+
+function getUncompletedSegments(top) {
+    var segmentNodes = []
     const segments = c.getElementsByTagName('li');
     for (let i = 0; i < segments.length; i++) {
         if (segments[i].className !== 'uploaded') {
-            return false;
+            segmentNodes.push(segments[i]);
+            if (segmentNodes.length >= top) {
+                break;
+            }
         }
     }
-    return segments.length > 0;
+    return segmentNodes;
 }
 
 
@@ -324,6 +347,10 @@ function verifyAndMerge() {
 chrome.devtools.network.onRequestFinished.addListener(
     function(a){
         if (a.request && a.request.url) {
+            if (asyncDownloading == true && urlPref != "") {
+                return;
+            }
+
             // log("got " + a.request.url);
             var results = (/\/([\w\d_-]+\.ts)/g).exec(a.request.url);
             if (results) {
@@ -332,8 +359,9 @@ chrome.devtools.network.onRequestFinished.addListener(
                     return;
                 }
 
-                if (asyncDownloading) {
-                    return;
+                if (urlPref == "") {
+                    urlPref = a.request.url.substring(0, a.request.url.indexOf(results[1]));
+                    log("Set urlPref to " + urlPref);
                 }
 
                 var tsName = results[1];
@@ -366,6 +394,7 @@ chrome.devtools.network.onRequestFinished.addListener(
 
 
 var currentTabId = -1
+var urlPref = ""
 function handleM3u8(a) {
     // try a different type when mp4 is not encoded:
     // https://exchange-d71s111.pipecdn.vip/ppotb62-S71lT2yliZApDBSvkYzBsrmD3fpCJ4nBsHhTcyo5x8qE1QslJerjp8yMHZU2qtCZ1mBJ0mGKD4GKKtHIvjS34/chunklist.m3u8
