@@ -8,6 +8,7 @@ var c = document.getElementById("canvas");
 var loadButton = document.getElementById("loadButton");
 var mergeButton = document.getElementById("mergeButton");
 var asyncDownloadButton = document.getElementById("asyncDownloadButton");
+var maxTaskInput = document.getElementById("maxTask");
 
 var lc = 0;
 var debugging = false
@@ -191,7 +192,7 @@ function startAsyncDownload() {
         return;
     }
 
-    const maxConcurrentDownloads = 5;
+    const maxConcurrentDownloads = parseInt(maxTaskInput.value);
     downloadingSegments = getScheduledSegments(maxConcurrentDownloads);
     gap = maxConcurrentDownloads - downloadingSegments.length;
     if (gap > 0) {
