@@ -13,6 +13,8 @@ var maxTaskInput = document.getElementById("maxTask");
 var lc = 0;
 var debugging = false
 
+var allSegmentNodes = []
+
 function formatDate() {
   const date = new Date();
   const yyyy = date.getFullYear();
@@ -138,6 +140,8 @@ function load() {
 
             c.appendChild(node);
         }
+
+        allSegmentNodes = c.children;
     });
 }
 
@@ -187,6 +191,7 @@ asyncDownloadButton.addEventListener("click", function() {
   }
 );
 
+var lastSegmentStart = 0;
 function startAsyncDownload() {
     if (!asyncDownloading) {
         return;
@@ -196,7 +201,7 @@ function startAsyncDownload() {
     downloadingSegments = getScheduledSegments(maxConcurrentDownloads);
     gap = maxConcurrentDownloads - downloadingSegments.length;
     if (gap > 0) {
-        downloadSegments(gap);
+        downloadSegments(gap, lastSegmentStart);
     }
 
     setTimeout(startAsyncDownload, 1000); // wait 1 second before next batch   
@@ -211,11 +216,14 @@ function downloadSegments(top) {
         return;
     }
 
-    segments.forEach(function(segmentNode) {
-        if (segmentNode == null) {
-            return;
-        }
+    if (segments.length == 0) {
+        return;
+    }
 
+    lastSegmentStart = segments[0];
+
+    segments.forEach(function(i) {
+        segmentNode = allSegmentNodes[i]
         segmentNode.className = "downloading";
         var tsName = segmentNode.id;
         var url = urlPref + segmentUrls[tsName];
@@ -233,10 +241,11 @@ function downloadSegments(top) {
 
 function getScheduledSegments(top) {
     var segmentNodes = []
-    const segments = c.getElementsByTagName('li');
+    const segments = allSegmentNodes;
     for (let i = 0; i < segments.length; i++) {
-        if (segments[i].className == 'downloading') {
-            segmentNodes.push(segments[i]);
+        var j = (i + lastSegmentStart) % segments.length;
+        if (segments[j].className == 'downloading') {
+            segmentNodes.push(segments[j]);
             if (segmentNodes.length >= top) {
                 break;
             }
@@ -247,23 +256,24 @@ function getScheduledSegments(top) {
 
 
 function getUnscheduledSegments(top) {
-    var segmentNodes = []
-    const segments = c.getElementsByTagName('li');
+    var segmentNos = []
+    const segments = allSegmentNodes;
     for (let i = 0; i < segments.length; i++) {
-        if (segments[i].className == 'notuploaded') {
-            segmentNodes.push(segments[i]);
-            if (segmentNodes.length >= top) {
+        var j = (i + lastSegmentStart) % segments.length;
+        if (segments[j].className == 'notuploaded') {
+            segmentNos.push(j);
+            if (segmentNos.length >= top) {
                 break;
             }
         }
     }
-    return segmentNodes;
+    return segmentNos;
 }
 
 
 // Add this function to check if all segments are uploaded
 function areAllSegmentsUploaded() {
-    const segments = c.getElementsByTagName('li');
+    const segments = allSegmentNodes;
     for (let i = 0; i < segments.length; i++) {
         if (segments[i].className !== 'uploaded') {
             return false;
@@ -315,7 +325,6 @@ function verifyAndMerge() {
 chrome.devtools.network.onRequestFinished.addListener(
     function(a){
         if (a.request && a.request.url) {
-
 
             // log("got " + a.request.url);
             var results = (/\/([\w\d_-]+\.ts)/g).exec(a.request.url);
@@ -422,6 +431,8 @@ chrome.tabs.onUpdated.addListener(
         if (changeInfo && changeInfo.url) {
             currentTabId = -1
             segmentUrls = {}
+            lastSegmentStart = 0
+            allSegmentNodes = []
             debug("Tab url has changed")
         }
     }
